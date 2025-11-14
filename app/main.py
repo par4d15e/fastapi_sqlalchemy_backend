@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from sqlmodel import SQLModel
 
 from app.core.database import engine
-from app.crud.crud import router as crud_router
+from app.api.v1.endpoints.heroes import router as heroes_router
 
 
 @asynccontextmanager
@@ -15,7 +15,7 @@ async def lifespan(_: FastAPI):
 
 def create_app() -> FastAPI:
     application = FastAPI(lifespan=lifespan)
-    application.include_router(crud_router)
+    application.include_router(heroes_router)
     return application
 
 

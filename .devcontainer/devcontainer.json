@@ -1,0 +1,123 @@
+{
+	"name": "Python 3 (Dockerfile)",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "..",
+		"args": {
+			"HTTP_PROXY": "http://192.168.0.54:10808",
+			"HTTPS_PROXY": "http://192.168.0.54:10808",
+			"ALL_PROXY": "socks5://192.168.0.54:10808",
+			"GIT_USER_NAME": "par4d15e",
+			"GIT_USER_EMAIL": "ericshen0911@163.com"
+		}
+	},
+
+	"forwardPorts": [
+		8000  // fastapi uvicorn 默认端口
+	],
+
+	// 挂载本地 SSH 密钥到容器
+	"mounts": [
+		"source=/home/eric/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+	],
+
+	// 容器使用的代理
+	"remoteEnv": {
+		"HTTP_PROXY": "http://192.168.0.54:10808",
+		"HTTPS_PROXY": "http://192.168.0.54:10808",
+		"ALL_PROXY": "socks5://192.168.0.54:10808",
+		"LANG": "C.UTF-8",
+		"LC_ALL": "C.UTF-8",
+		"UV_LINK_MODE": "copy"
+	},
+
+	// 容器创建后同步依赖
+	"postCreateCommand": "chmod 700 /home/vscode/.ssh 2>/dev/null || true && chmod 600 /home/vscode/.ssh/* 2>/dev/null || true && uv sync --extra dev",
+
+	// 容器使用的vscode插件
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"MS-CEINTL.vscode-language-pack-zh-hans",
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				"ms-python.python",
+				"ms-python.debugpy",
+				"ms-python.vscode-python-envs",
+				"ms-python.vscode-pylance",
+				"charliermarsh.ruff",
+				"the0807.uv-toolkit",
+				"tamasfe.even-better-toml",
+				"esbenp.prettier-vscode",
+				"christian-kohler.path-intellisense",
+				"qwtel.sqlite-viewer",
+				"ms-azuretools.vscode-containers",
+				"ms-azuretools.vscode-docker"
+			],
+			// 防止推荐安装不需要的扩展
+			"unwantedRecommendations": [
+				"ms-python.autopep8",
+				"dbaeumer.vscode-eslint"
+			],
+			"settings": {
+				// 设置 Copilot 中文响应
+				"github.copilot.chat.localeOverride": "zh-CN",
+				"settingsSync.ignoredSettings": [
+					// 解释器与虚拟环境相关（不同机器路径不同）
+					"python.defaultInterpreterPath",
+					"python-env.workspaceSearchPaths",
+					"python.envFile",
+					"python.terminal.activateEnvironment",
+					"python.terminal.activateEnvInCurrentTerminal",
+					"python-envs.terminal.autoActivationType",
+					"python.useEnvironmentsExtension",
+					// 格式化/语言策略可能因项目不同
+					"python.analysis.typeCheckingMode",
+					"editor.defaultFormatter",
+					"prettier.documentSelectors"
+				],
+				
+				// Python 解释器配置（虚拟环境）
+				"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+				"python.analysis.autoImportCompletions": true,
+				"python.analysis.typeCheckingMode": "basic",
+				"python.useEnvironmentsExtension": true,
+				"python-env.workspaceSearchPaths": [".venv"],
+				
+				// Python 终端自动激活虚拟环境
+				"python.terminal.activateEnvironment": true,
+				"python.terminal.activateEnvInCurrentTerminal": true,
+				"python-envs.terminal.autoActivationType": "shellStartup",
+
+					// Ensure VS Code terminal in the container defaults to zsh
+					"terminal.integrated.profiles.linux": {
+						"zsh": {
+							"path": "/bin/zsh",
+							"args": []
+						},
+						"bash": {
+							"path": "/bin/bash",
+							"args": []
+						}
+					},
+					"terminal.integrated.defaultProfile.linux": "zsh",
+
+				// 使用 Ruff 作为唯一的格式化和检查工具
+				"[python]": {
+					"editor.defaultFormatter": "charliermarsh.ruff",
+					"editor.formatOnSave": true,
+					"editor.codeActionsOnSave": {
+						"source.organizeImports": "explicit",
+						"source.fixAll": "explicit"
+					}
+				},
+
+				// 限制其他工具作用范围
+				"prettier.documentSelectors": ["**/*.{json,md,yml,yaml,toml}"],
+				"eslint.enable": false,
+				"editor.formatOnSave": true
+			}
+		}
+	},
+	"remoteUser": "vscode"
+}

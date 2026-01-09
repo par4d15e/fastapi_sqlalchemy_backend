@@ -1,37 +1,40 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
-from sqlmodel import SQLModel
+from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.database import engine
-from app.api.v1.endpoints.heroes import router as heroes_router
-
-
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    SQLModel.metadata.create_all(engine)
-    yield
+from app.core.exception import register_exception_handlers
+from app.core.lifespan import lifespan
+from app.profiles import router as profile_routers
 
 
 def create_app() -> FastAPI:
-    application = FastAPI(lifespan=lifespan)
-    application.include_router(heroes_router)
-    return application
+    app = FastAPI(
+        title="fastapi_sqlmodel_demo",
+        version="0.1.0",
+        description="Demo API for FastAPI + SQLModel",
+        lifespan=lifespan,  # 绑定生命周期管理器
+    )
+
+    # 中间件（按需启用）
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # 路由注册
+    app.include_router(profile_routers.router, prefix="", tags=["profile"])
+
+    # 健康检查
+    @app.get("/healthz", tags=["health"])
+    async def healthz():
+        return {"status": "ok"}
+
+    # 注册全局异常处理
+    register_exception_handlers(app)
+
+    return app
 
 
 app = create_app()
-
-
-@app.get("/health")
-def health_check() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-def main() -> None:
-    import uvicorn
-
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
-
-
-if __name__ == "__main__":
-    main()

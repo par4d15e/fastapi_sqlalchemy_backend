@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exception import AlreadyExistsException, NotFoundException
 from app.profiles.model import Profile
-from app.profiles.repo import profile_repository
+from app.profiles.repository import ProfileRepository
 from app.profiles.schema import ProfileCreate, ProfileUpdate
 
 
@@ -11,30 +11,31 @@ class ProfileService:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+        self._repo = ProfileRepository(session)
 
     async def get_by_name(self, name: str) -> Profile | None:
-        return await profile_repository.get_by_name(self._session, name)
+        return await self._repo.get_by_name(name)
 
     async def get_by_id(self, id: int) -> Profile | None:
-        return await profile_repository.get_by_id(self._session, id)
+        return await self._repo.get_by_id(id)
 
     async def list_all(self, offset: int = 0, limit: int = 100) -> list[Profile]:
-        return await profile_repository.list_all(self._session, offset, limit)
+        return await self._repo.list_all(offset, limit)
 
     async def create(self, payload: ProfileCreate) -> Profile:
-        existing = await profile_repository.get_by_name(self._session, payload.name)
+        existing = await self._repo.get_by_name(payload.name)
         if existing:
             raise AlreadyExistsException("Profile name exists")
-        return await profile_repository.create(self._session, payload)
+        return await self._repo.create(payload)
 
     async def update(self, id: int, payload: ProfileUpdate) -> Profile:
-        db_obj = await profile_repository.get_by_id(self._session, id)
+        db_obj = await self._repo.get_by_id(id)
         if not db_obj:
             raise NotFoundException("Profile not found")
-        return await profile_repository.update(self._session, db_obj, payload)
+        return await self._repo.update(db_obj, payload)
 
     async def delete(self, id: int) -> bool:
-        deleted = await profile_repository.delete(self._session, id)
+        deleted = await self._repo.delete(id)
         if not deleted:
             raise NotFoundException("Profile not found")
         return True

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.exception import NotFoundException
-from app.profiles.schema import ProfileCreate, ProfileRead, ProfileUpdate
+from app.profiles.schema import ProfileCreate, ProfileResponse, ProfileUpdate
 from app.profiles.service import ProfileService
 
 router = APIRouter()
@@ -15,14 +15,14 @@ async def get_profile_service(
     return ProfileService(session)
 
 
-@router.post("/profile/", response_model=ProfileRead, status_code=201)
+@router.post("/profile/", response_model=ProfileResponse, status_code=201)
 async def create_profile(
     profile: ProfileCreate, service: ProfileService = Depends(get_profile_service)
 ):
     return await service.create(profile)
 
 
-@router.get("/profile/{profile_name}", response_model=ProfileRead)
+@router.get("/profile/{profile_name}", response_model=ProfileResponse)
 async def read_profile(
     profile_name: str, service: ProfileService = Depends(get_profile_service)
 ):
@@ -32,7 +32,7 @@ async def read_profile(
     return profile
 
 
-@router.patch("/profile/{profile_id}", response_model=ProfileRead)
+@router.patch("/profile/{profile_id}", response_model=ProfileResponse)
 async def update_profile(
     profile_id: int,
     profile: ProfileUpdate,

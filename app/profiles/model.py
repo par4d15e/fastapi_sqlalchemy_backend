@@ -17,3 +17,9 @@ class Profile(Base, DateTimeMixin):
     gender: Mapped[str] = mapped_column(String(20), nullable=False, comment="性别")
     variety: Mapped[str] = mapped_column(String(100), nullable=False, comment="品种")
     birthday: Mapped[date | None] = mapped_column(Date, nullable=True, comment="生日")
+    meals_per_day: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=2, comment="每日餐数"
+    )
+    description: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, comment="描述"
+    )

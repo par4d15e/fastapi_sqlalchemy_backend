@@ -1,49 +1,58 @@
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.exception import NotFoundException
+from app.profiles.repository import ProfileRepository
 from app.profiles.schema import ProfileCreate, ProfileResponse, ProfileUpdate
 from app.profiles.service import ProfileService
 
-router = APIRouter()
+router = APIRouter(prefix="/profiles", tags=["profiles"])
 
 
+# 依赖注入：为当前请求提供 ProfileService
 async def get_profile_service(
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ProfileService:
-    return ProfileService(session)
+    repository = ProfileRepository(session)
+    return ProfileService(repository)
 
 
-@router.post("/profile/", response_model=ProfileResponse, status_code=201)
+@router.post("/", response_model=ProfileResponse, status_code=201)
 async def create_profile(
-    profile: ProfileCreate, service: ProfileService = Depends(get_profile_service)
+    profile_data: Annotated[ProfileCreate, Depends()],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ):
-    return await service.create(profile)
+    new_profile = await service.create_profile(profile_data)
+    return new_profile
 
 
-@router.get("/profile/{profile_name}", response_model=ProfileResponse)
-async def read_profile(
-    profile_name: str, service: ProfileService = Depends(get_profile_service)
+# 查询指定名称的 profile，不存在抛出 404
+@router.get("/{profile_name}", response_model=ProfileResponse)
+async def get_profile(
+    profile_name: Annotated[str, Path(..., description="宠物名称")],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ):
-    profile = await service.get_by_name(profile_name)
+    profile = await service.get_profile_by_name(profile_name)
     if not profile:
         raise NotFoundException("Profile not found")
     return profile
 
 
-@router.patch("/profile/{profile_id}", response_model=ProfileResponse)
+@router.patch("/{profile_id}", response_model=ProfileResponse)
 async def update_profile(
     profile_id: int,
     profile: ProfileUpdate,
-    service: ProfileService = Depends(get_profile_service),
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ):
-    return await service.update(profile_id, profile)
+    return await service.update_profile(profile_id, profile)
 
 
-@router.delete("/profile/{profile_id}", status_code=204)
+@router.delete("/{profile_id}", status_code=204)
 async def delete_profile(
     profile_id: int, service: ProfileService = Depends(get_profile_service)
 ):
-    await service.delete(profile_id)
+    await service.delete_profile(profile_id)
     return None

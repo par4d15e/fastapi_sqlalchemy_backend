@@ -35,6 +35,17 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && curl -LsSf https://astral.ac.cn/ruff/install.sh | sh
 ENV PATH="/home/vscode/.local/bin:${PATH}"
 
+# 安装 nvm 并通过 nvm 安装最新 LTS 版本的 Node.js
+ENV NVM_DIR="/home/vscode/.nvm"
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash \
+    && . "$NVM_DIR/nvm.sh" \
+    && nvm install --lts \
+    && nvm alias default 'lts/*' \
+    && nvm use default
+
+# 确保 nvm 在 shell 启动时可用
+RUN echo '\n# nvm setup\nexport NVM_DIR="$HOME/.nvm"\n[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm\n[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion\n' >> /home/vscode/.zshrc
+
 # 配置 Git 用户信息（可通过构建参数覆盖）并安装 Ruff CLI
 ARG GIT_USER_NAME="par4d15e"
 ARG GIT_USER_EMAIL="ericshen0911@163.com"
@@ -45,7 +56,7 @@ RUN git config --global user.name "${GIT_USER_NAME}" \
 RUN echo '\n# >>> vscode python\nif [ -z "$VSCODE_PYTHON_AUTOACTIVATE_GUARD" ]; then\n    export VSCODE_PYTHON_AUTOACTIVATE_GUARD=1\n    if [ -n "$VSCODE_PYTHON_ZSH_ACTIVATE" ] && [ "$TERM_PROGRAM" = "vscode" ]; then\n        eval "$VSCODE_PYTHON_ZSH_ACTIVATE" || true\n    fi\nfi\n' >> /home/vscode/.zshrc
 
 # 设置工作目录
-WORKDIR /workspaces/fastapi_study
+WORKDIR /workspaces/fastapi_sqlalchemy_backend
 
 # 容器启动时的默认命令
 CMD ["/bin/zsh"]

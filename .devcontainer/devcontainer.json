@@ -50,7 +50,6 @@
 				"tamasfe.even-better-toml",
 				"esbenp.prettier-vscode",
 				"christian-kohler.path-intellisense",
-				"qwtel.sqlite-viewer",
 				"ms-azuretools.vscode-containers",
 				"ms-azuretools.vscode-docker"
 			],

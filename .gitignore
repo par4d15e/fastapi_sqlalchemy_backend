@@ -49,7 +49,6 @@ Thumbs.db
 .env.*  # ignore .env.local, .env.dev, etc.
 
 # Database
-*.sqlite3
 *.db
 
 # Logs

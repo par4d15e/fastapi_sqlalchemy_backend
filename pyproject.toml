@@ -1,25 +1,24 @@
 [project]
-name = "fastapi-sqlmodel-demo"
+name = "fastapi_sqlalchemy_backend"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "aiosqlite>=0.22.1",
-    "apiexception>=0.2.1",
     "asyncpg>=0.31.0",
     "fastapi[standard]>=0.128.0",
     "loguru>=0.7.3",
     "pwdlib>=0.3.0",
-    "pyjwt>=2.10.1",
+    "python-jose>=3.5.0",
     "sqlalchemy[asyncio]>=2.0.45",
+    "sqlmodel>=0.0.37",
 ]
-
 
 # 可选依赖分组 - 专门存放测试/开发依赖（生产环境不会主动安装）
 [project.optional-dependencies]
-# 命名为 test，可自定义（如 dev、test-utils）
-test = [
+
+# dev 额外包（用于容器/开发环境），复制自 test，以便 `uv sync --extra dev` 生效
+dev = [
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",

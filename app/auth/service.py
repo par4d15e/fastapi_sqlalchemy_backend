@@ -1,44 +1,42 @@
+import secrets
 from typing import Optional
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.auth.models import RefreshToken, VerificationCode
-from app.auth.repository import RefreshTokenCRUD, VerificationCodeCRUD
+from app.auth.model import Code, RefreshToken
+from app.auth.repository import CodeCRUD, RefreshTokenCRUD
 from app.auth.schemas import RefreshTokenCreate
 from app.core.exception import NotFoundException
 
 
 class AuthService:
-    """Auth 服务层：封装与令牌/验证码相关的业务逻辑并调用 repo"""
+    """Auth 服务层：封装与令牌/验证码相关的业务逻辑并调用 repository"""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
         # instantiate repos with the session
         self._refresh_repo = RefreshTokenCRUD(session)
-        self._code_repo = VerificationCodeCRUD(session)
+        self._code_repo = CodeCRUD(session)
 
     # Refresh token related
     async def create_refresh_token(self, payload: RefreshTokenCreate) -> RefreshToken:
-        # 这里不强制去重 token（token 应由调用方保证唯一），直接创建
+        # jit 在服务层生成，调用方无需提供
+        jit = secrets.token_urlsafe(16)
         return await self._refresh_repo.create(
             user_id=payload.user_id,
+            jit=jit,
             token=payload.token,
-            expires_at=payload.expires_at,
-            device_name=payload.device_name,
-            device_type=payload.device_type,
-            ip_address=payload.ip_address,
-            user_agent=payload.user_agent,
+            expired_at=payload.expires_at,
         )
 
     async def get_refresh_token(self, token: str) -> Optional[RefreshToken]:
         return await self._refresh_repo.get_by_token(token)
 
     async def revoke(self, token: str) -> bool:
-        db_token = await self._refresh_repo.get_by_token(token)
-        if not db_token:
+        """通过仓库撤销令牌，若未找到则抛错误。"""
+        ok = await self._refresh_repo.revoke(token)
+        if not ok:
             raise NotFoundException("Refresh token not found")
-        db_token.revoke()
-        await self._session.commit()
         return True
 
     async def revoke_user_tokens(self, user_id: int) -> int:
@@ -54,45 +52,45 @@ class AuthService:
         code_type: str,
         expiration_minutes: int = 60,
         max_attempts: int = 5,
-    ) -> VerificationCode:
+    ) -> Code:
+        # convert to enum before delegating to repo
+        from app.auth.model import CodeType
+
+        enum_type = CodeType[code_type] if isinstance(code_type, str) else code_type
         return await self._code_repo.create(
             user_id=user_id,
-            code_type=code_type,
+            code_type=enum_type,
             expiration_minutes=expiration_minutes,
-            max_attempts=max_attempts,
         )
 
     async def get_verification_code(
         self, user_id: int, code: str, code_type: str
-    ) -> Optional[VerificationCode]:
-        return await self._code_repo.get(user_id, code, code_type)
+    ) -> Optional[Code]:
+        from app.auth.model import CodeType
 
-    async def verify_code(
-        self, user_id: int, code: str, code_type: str
-    ) -> VerificationCode | None:
-        db_code = await self._code_repo.get(user_id, code, code_type)
+        enum_type = CodeType[code_type] if isinstance(code_type, str) else code_type
+        return await self._code_repo.get(user_id, code, enum_type)
+
+    async def verify_code(self, user_id: int, code: str, code_type: str) -> Code | None:
+        from app.auth.model import CodeType
+
+        enum_type = CodeType[code_type] if isinstance(code_type, str) else code_type
+        db_code = await self._code_repo.verify(user_id, code, enum_type)
         if not db_code:
             raise NotFoundException("Verification code not found")
-
-        # increment attempts and check validity inside repo/service
-        db_code.increment_attempts()
-        await self._session.commit()
-
-        if not db_code.is_valid():
-            return None
-
-        db_code.mark_as_used()
-        await self._session.commit()
-        await self._session.refresh(db_code)
         return db_code
 
-    async def get_latest_code(
-        self, user_id: int, code_type: str
-    ) -> Optional[VerificationCode]:
-        return await self._code_repo.get_latest(user_id, code_type)
+    async def get_latest_code(self, user_id: int, code_type: str) -> Optional[Code]:
+        from app.auth.model import CodeType
+
+        enum_type = CodeType[code_type] if isinstance(code_type, str) else code_type
+        return await self._code_repo.get_latest(user_id, enum_type)
 
     async def invalidate_user_codes(self, user_id: int, code_type: str) -> int:
-        return await self._code_repo.invalidate_user_codes(user_id, code_type)
+        from app.auth.model import CodeType
+
+        enum_type = CodeType[code_type] if isinstance(code_type, str) else code_type
+        return await self._code_repo.invalidate_user_codes(user_id, enum_type)
 
     async def cleanup_expired_verification_codes(self) -> int:
         return await self._code_repo.cleanup_expired()

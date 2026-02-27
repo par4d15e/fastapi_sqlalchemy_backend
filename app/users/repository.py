@@ -81,8 +81,9 @@ class UserRepository:
         user = User(
             username=user_data["username"],
             email=user_data["email"],
-            hashed_password=hashed_password,
+            password_hash=hashed_password,
             is_verified=False,
+            created_at=datetime.now(timezone.utc),
         )
 
         self.session.add(user)
@@ -102,7 +103,7 @@ class UserRepository:
             return None
 
         if "password" in user_data:
-            user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
+            user_data["password_hash"] = get_password_hash(user_data.pop("password"))
 
         for key, value in user_data.items():
             setattr(db_user, key, value)
@@ -130,12 +131,8 @@ class UserRepository:
         if not user:
             return None
 
-        if not verify_password(password, user.hashed_password):
+        if not user.password_hash or not verify_password(password, user.password_hash):
             return None
-
-        user.last_login_at = datetime.now(timezone.utc)
-        await self.session.commit()
-        await self.session.refresh(user)
 
         return user
 
@@ -154,7 +151,7 @@ class UserRepository:
         if not db_user:
             return None
 
-        db_user.hashed_password = get_password_hash(new_password)
+        db_user.password_hash = get_password_hash(new_password)
         db_user.updated_at = datetime.now(timezone.utc)
         await self.session.commit()
         await self.session.refresh(db_user)

@@ -85,11 +85,12 @@ class VerificationCodeResponse(SQLModel):
 class VerificationCodeVerify(SQLModel):
     """验证码验证 Schema"""
 
+    id: Annotated[int, Field(...)]
     code: Annotated[str, Field(..., min_length=4, max_length=10)]
     code_type: Annotated[str, Field(..., description="生成令牌相关 schema")]
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": [{"code": "123456", "code_type": "email_verification"}]
+            "example": [{"id": 1, "code": "123456", "code_type": "email_verification"}]
         }
     )  # type: ignore[assignment]

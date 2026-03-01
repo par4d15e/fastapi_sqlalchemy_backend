@@ -17,14 +17,14 @@ from app.core.database import get_session
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# dependency providing AuthService using the shared database session
+# 依赖注入：使用共享数据库会话提供 AuthService 实例
 async def get_auth_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AuthService:
     return AuthService(session)
 
 
-# ---------- refresh token endpoints ----------
+# ---------- 刷新令牌相关接口 ----------
 
 
 @router.post(
@@ -78,7 +78,7 @@ async def revoke_user_tokens(
     return await service.revoke_user_tokens(user_id)
 
 
-# ---------- verification code endpoints ----------
+# ---------- 验证码相关接口 ----------
 
 
 @router.post(
@@ -90,8 +90,7 @@ async def create_verification_code(
     payload: VerificationCodeCreate,
     service: Annotated[AuthService, Depends(get_auth_service)],
 ):
-    # the service generates the actual code and expiration,
-    # so we only forward the parameters it understands
+    # service 负责生成实际验证码和过期时间，此处仅计算并传入有效期分钟数
     expiration_minutes = 60
     try:
         delta = payload.expires_at - datetime.now(timezone.utc)

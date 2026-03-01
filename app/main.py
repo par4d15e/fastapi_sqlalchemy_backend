@@ -11,9 +11,9 @@ from app.reminders import router as reminder_routers
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="fastapi_sqlalchemy_backend",
+        title="fastapi_sqlmodel_backend",
         version="0.1.0",
-        description="Demo for FastAPI + SQLAlchemy + AsyncIO",
+        description="Demo for FastAPI + SQLModel + AsyncIO",
         lifespan=lifespan,  # 绑定生命周期管理器
     )
 

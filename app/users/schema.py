@@ -4,6 +4,8 @@ from typing import Annotated
 from pydantic import ConfigDict, EmailStr, model_validator
 from sqlmodel import Field, SQLModel
 
+from app.users.model import RoleType
+
 
 class UserBase(SQLModel):
     """基类"""
@@ -41,12 +43,12 @@ class UserResponse(UserBase):
     """用户响应"""
 
     id: int
+    role: RoleType
     is_active: bool
     is_verified: bool
-    is_superuser: bool
+    is_deleted: bool
     created_at: datetime
-    updated_at: datetime
-    last_login_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)  # type: ignore[assignment]
 

@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Annotated
 
-from sqlalchemy import Column, DateTime, MetaData, func
+import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy import Column, MetaData, func
 from sqlmodel import Field, SQLModel
 
 # 保持原有的命名约定 (用于 Alembic / metadata.create_all)
@@ -26,7 +27,7 @@ class DateTimeMixin(SQLModel):
         datetime,
         Field(
             sa_column=Column(
-                DateTime(timezone=True),
+                pg.TIMESTAMP(timezone=True),
                 server_default=func.now(),  # PostgreSQL 原生 now() 函数
                 nullable=False,
                 index=True,
@@ -39,7 +40,7 @@ class DateTimeMixin(SQLModel):
         datetime,
         Field(
             sa_column=Column(
-                DateTime(timezone=True),
+                pg.TIMESTAMP(timezone=True),
                 server_default=func.now(),
                 onupdate=func.now(),  # 更新时自动刷新
                 nullable=False,

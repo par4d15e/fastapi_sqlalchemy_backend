@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.exc import IntegrityError
 
 from app.core.exception import AlreadyExistsException, NotFoundException
@@ -18,8 +20,8 @@ class UserService:
 
         return UserResponse.model_validate(user)
 
-    async def get_user_by_id(self, user_id: int) -> UserResponse:
-        user = await self.repository.get_by_id(user_id)
+    async def get_user_by_uid(self, user_uid: uuid.UUID) -> UserResponse:
+        user = await self.repository.get_by_id(user_uid)
         if not user:
             raise NotFoundException("User not found")
 
@@ -36,7 +38,7 @@ class UserService:
         self,
         *,
         search: str | None = None,
-        order_by: str = "id",
+        order_by: str = "uid",
         direction: str = "asc",
         limit: int = 10,
         offset: int = 0,
@@ -63,12 +65,12 @@ class UserService:
 
     async def update_user(
         self,
-        user_id: int,
+        user_uid: uuid.UUID,
         user_data: UserUpdate,
     ) -> UserResponse:
         try:
             update_data = user_data.model_dump(exclude_unset=True, exclude_none=True)
-            updated = await self.repository.update(user_id, update_data)
+            updated = await self.repository.update(user_uid, update_data)
             if not updated:
                 raise NotFoundException("User not found")
 
@@ -78,8 +80,8 @@ class UserService:
                 "User with this username or email already exists"
             ) from e
 
-    async def delete_user(self, user_id: int) -> bool:
-        deleted = await self.repository.delete(user_id)
+    async def delete_user(self, user_uid: uuid.UUID) -> bool:
+        deleted = await self.repository.delete(user_uid)
         if not deleted:
             raise NotFoundException("User not found")
 
@@ -92,15 +94,17 @@ class UserService:
 
         return UserResponse.model_validate(user)
 
-    async def verify_email(self, user_id: int) -> UserResponse:
-        result = await self.repository.verify_email(user_id)
+    async def verify_email(self, user_uid: uuid.UUID) -> UserResponse:
+        result = await self.repository.verify_email(user_uid)
         if not result:
             raise NotFoundException("User not found")
 
         return UserResponse.model_validate(result)
 
-    async def change_password(self, user_id: int, new_password: str) -> UserResponse:
-        result = await self.repository.change_password(user_id, new_password)
+    async def change_password(
+        self, user_uid: uuid.UUID, new_password: str
+    ) -> UserResponse:
+        result = await self.repository.change_password(user_uid, new_password)
         if not result:
             raise NotFoundException("User not found")
 

@@ -24,7 +24,7 @@ class DateTimeMixin(SQLModel):
     """
 
     created_at: Annotated[
-        datetime,
+        datetime | None,
         Field(
             sa_column=Column(
                 pg.TIMESTAMP(timezone=True),
@@ -34,10 +34,10 @@ class DateTimeMixin(SQLModel):
             ),
             description="创建时间（数据库自动生成）",
         ),
-    ]
+    ] = None
 
     updated_at: Annotated[
-        datetime,
+        datetime | None,
         Field(
             sa_column=Column(
                 pg.TIMESTAMP(timezone=True),
@@ -47,4 +47,4 @@ class DateTimeMixin(SQLModel):
             ),
             description="更新时间（数据库自动生成/刷新）",
         ),
-    ]
+    ] = None

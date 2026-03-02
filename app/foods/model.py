@@ -21,19 +21,23 @@ class Food(SQLModel, table=True, mixins=[DateTimeMixin]):
         Index("idx_foods_price_asc", "price"),  # 按价格排序
     )
 
-    id: Annotated[int, Field(default=None, primary_key=True, description="编号")]
+    id: Annotated[
+        int | None, Field(default=None, primary_key=True, description="编号")
+    ] = None
     name: Annotated[
         str, Field(..., max_length=100, index=True, unique=True, description="名称")
     ]
     brand: Annotated[str, Field(..., max_length=100, index=True, description="品牌")]
     kcals_per_g: Annotated[
         float | None, Field(default=None, ge=0, description="卡路里/克")
-    ]
-    price: Annotated[float | None, Field(default=None, ge=0, description="价格")]
-    weight: Annotated[float | None, Field(default=None, ge=0, description="重量")]
+    ] = None
+    price: Annotated[float | None, Field(default=None, ge=0, description="价格")] = None
+    weight: Annotated[float | None, Field(default=None, ge=0, description="重量")] = (
+        None
+    )
     description: Annotated[
         str | None, Field(default=None, max_length=255, description="描述")
-    ]
+    ] = None
 
     def __repr__(self) -> str:  # pragma: no cover - simple representation
-        return f"<Food(id={self.id}, name={self.name}, brand={self.brand})>"
+        return f"<Food(id={self.id}, name={self.name})>"

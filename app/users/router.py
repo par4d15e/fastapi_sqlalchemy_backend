@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
@@ -21,7 +22,9 @@ async def get_user_service(
 async def list_users(
     service: Annotated[UserService, Depends(get_user_service)],
     search: Annotated[str | None, Query(description="按用户名或邮箱搜索")] = None,
-    order_by: Annotated[str, Query(description="排序字段: id, username, created_at")] = "id",
+    order_by: Annotated[
+        str, Query(description="排序字段: uid, username, created_at")
+    ] = "uid",
     direction: Annotated[str, Query(description="排序方向: asc, desc")] = "asc",
     limit: Annotated[int, Query(ge=1, le=500, description="每页数量")] = 10,
     offset: Annotated[int, Query(ge=0, description="偏移量")] = 0,
@@ -43,27 +46,27 @@ async def create_user(
     return await service.create_user(user_data)
 
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{uid}", response_model=UserResponse)
 async def get_user(
-    user_id: Annotated[int, Path(..., description="用户ID")],
+    uid: Annotated[uuid.UUID, Path(..., description="用户 UID")],
     service: Annotated[UserService, Depends(get_user_service)],
 ):
-    return await service.get_user_by_id(user_id)
+    return await service.get_user_by_uid(uid)
 
 
-@router.patch("/{user_id}", response_model=UserResponse)
+@router.patch("/{uid}", response_model=UserResponse)
 async def update_user(
-    user_id: Annotated[int, Path(..., description="用户ID")],
+    uid: Annotated[uuid.UUID, Path(..., description="用户 UID")],
     user_data: UserUpdate,
     service: Annotated[UserService, Depends(get_user_service)],
 ):
-    return await service.update_user(user_id, user_data)
+    return await service.update_user(uid, user_data)
 
 
-@router.delete("/{user_id}", status_code=204)
+@router.delete("/{uid}", status_code=204)
 async def delete_user(
-    user_id: Annotated[int, Path(..., description="用户ID")],
+    uid: Annotated[uuid.UUID, Path(..., description="用户 UID")],
     service: Annotated[UserService, Depends(get_user_service)],
 ):
-    await service.delete_user(user_id)
+    await service.delete_user(uid)
     return None

@@ -9,14 +9,13 @@ from sqlmodel import Field, SQLModel
 
 class RefreshTokenCreate(SQLModel):
     """刷新令牌创建 Schema"""
-
-    device_name: Annotated[str | None, Field(None, max_length=200)]
-    device_type: Annotated[str | None, Field(None, max_length=50)]
+    device_name: Annotated[str | None, Field(None, max_length=200)] = None
+    device_type: Annotated[str | None, Field(None, max_length=50)] = None
     user_id: Annotated[int, Field(...)]
     token: Annotated[str, Field(...)]
     expires_at: Annotated[datetime, Field(...)]
-    ip_address: Annotated[str | None, Field(None)]
-    user_agent: Annotated[str | None, Field(None, max_length=500)]
+    ip_address: Annotated[str | None, Field(None)] = None
+    user_agent: Annotated[str | None, Field(None, max_length=500)] = None
 
 
 class RefreshTokenResponse(SQLModel):
@@ -53,7 +52,7 @@ class RefreshTokenRevoke(SQLModel):
     token: Annotated[
         str | None,
         Field(None, description="生成令牌相关 schema"),
-    ]
+    ] = None
 
 
 # ========== 验证码 相关 Schema ==========
@@ -66,7 +65,7 @@ class VerificationCodeCreate(SQLModel):
     user_id: Annotated[int, Field(...)]
     code: Annotated[str, Field(...)]
     expires_at: Annotated[datetime, Field(...)]
-    max_attempts: Annotated[int, Field(5)]
+    max_attempts: Annotated[int, Field(5)] = 5
 
 
 class VerificationCodeResponse(SQLModel):

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Mapping, MutableMapping
 
@@ -15,8 +16,8 @@ class UserRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get_by_id(self, user_id: int) -> User | None:
-        user = await self.session.get(User, user_id)
+    async def get_by_id(self, uid: uuid.UUID) -> User | None:
+        user = await self.session.get(User, uid)
         if not user:
             return None
 
@@ -44,7 +45,7 @@ class UserRepository:
         self,
         *,
         search: str | None = None,
-        order_by: str = "id",
+        order_by: str = "uid",
         direction: str = "asc",
         limit: int = 10,
         offset: int = 0,
@@ -59,10 +60,10 @@ class UserRepository:
             )
 
         # 2. 排序
-        allowed_sort = {"id", "username", "created_at"}
+        allowed_sort = {"uid", "username", "created_at"}
         if order_by not in allowed_sort:
-            order_by = "id"
-        order_column = getattr(User, order_by, User.id)
+            order_by = "uid"
+        order_column = getattr(User, order_by, User.uid)
         query = query.order_by(
             desc(order_column) if direction == "desc" else asc(order_column)
         )
@@ -83,7 +84,6 @@ class UserRepository:
             email=user_data["email"],
             password_hash=hashed_password,
             is_verified=False,
-            created_at=datetime.now(timezone.utc),
         )
 
         self.session.add(user)
@@ -96,9 +96,9 @@ class UserRepository:
         return user
 
     async def update(
-        self, user_id: int, user_data: MutableMapping[str, Any]
+        self, uid: uuid.UUID, user_data: MutableMapping[str, Any]
     ) -> User | None:
-        db_user = await self.get_by_id(user_id)
+        db_user = await self.get_by_id(uid)
         if not db_user:
             return None
 
@@ -113,8 +113,8 @@ class UserRepository:
         await self.session.refresh(db_user)
         return db_user
 
-    async def delete(self, user_id: int) -> bool:
-        db_user = await self.get_by_id(user_id)
+    async def delete(self, uid: uuid.UUID) -> bool:
+        db_user = await self.get_by_id(uid)
         if not db_user:
             return False
 
@@ -136,8 +136,8 @@ class UserRepository:
 
         return user
 
-    async def verify_email(self, user_id: int) -> User | None:
-        db_user = await self.get_by_id(user_id)
+    async def verify_email(self, uid: uuid.UUID) -> User | None:
+        db_user = await self.get_by_id(uid)
         if not db_user:
             return None
 
@@ -146,8 +146,8 @@ class UserRepository:
         await self.session.refresh(db_user)
         return db_user
 
-    async def change_password(self, user_id: int, new_password: str) -> User | None:
-        db_user = await self.get_by_id(user_id)
+    async def change_password(self, uid: uuid.UUID, new_password: str) -> User | None:
+        db_user = await self.get_by_id(uid)
         if not db_user:
             return None
 

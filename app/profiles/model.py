@@ -30,17 +30,17 @@ class Profile(SQLModel, table=True, mixins=[DateTimeMixin]):
 
     id: Annotated[
         int | None, Field(default=None, primary_key=True, description="宠物ID")
-    ]
+    ] = None
     name: Annotated[str, Field(..., max_length=100, unique=True, description="姓名")]
     gender: Annotated[str, Field(..., max_length=20, description="性别")]
     variety: Annotated[str, Field(..., max_length=100, description="品种")]
-    birthday: Annotated[date | None, Field(default=None, description="生日")]
-    meals_per_day: Annotated[int, Field(default=2, description="每日餐数")]
+    birthday: Annotated[date | None, Field(default=None, description="生日")] = None
+    meals_per_day: Annotated[int, Field(default=2, description="每日餐数")] = 2
     description: Annotated[
         str | None, Field(default=None, max_length=255, description="描述")
-    ]
+    ] = None
 
-    reminders: Annotated[list["Reminder"], Relationship(back_populates="profile")]
+    reminders: Annotated[list["Reminder"], Relationship(back_populates="profile")] = []
 
     def __repr__(self) -> str:  # pragma: no cover - simple representation
-        return f"<Profile(id={self.id}, name={self.name}, gender={self.gender}, variety={self.variety})>"
+        return f"<Profile(id={self.id}, name={self.name})>"

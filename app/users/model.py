@@ -1,18 +1,19 @@
-from __future__ import annotations
-
-from datetime import datetime
+import uuid
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
-from sqlalchemy import text
-from sqlalchemy.dialects.mysql import TIMESTAMP
+import sqlalchemy.dialects.postgresql as pg
 from sqlmodel import (
+    Column,
     Field,
     Index,
     Relationship,
     SQLModel,
     desc,
+    text,
 )
+
+from app.core.base_model import DateTimeMixin
 
 # 防止循环导入
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ class RoleType(IntEnum):
     admin = 2
 
 
-class User(SQLModel, table=True):
+class User(SQLModel, table=True, mixins=[DateTimeMixin]):
     """用户表 - 存储系统用户的基本信息"""
 
     __tablename__ = "users"  # type: ignore[assignment]
@@ -45,7 +46,7 @@ class User(SQLModel, table=True):
             "is_deleted",
         ),  # auth_crud.py: get_user_by_email
         Index(
-            "idx_users_get_user_by_id", "id", "is_active", "is_verified", "is_deleted"
+            "idx_users_get_user_by_uid", "uid", "is_active", "is_verified", "is_deleted"
         ),  # auth_crud.py: get_user_by_id
         Index(
             "idx_users_get_user_by_username", "username", "is_active", "is_verified"
@@ -55,61 +56,78 @@ class User(SQLModel, table=True):
         Index("idx_users_updated_at_desc", desc("updated_at")),
     )
 
-    id: int | None = Field(default=None, primary_key=True)
-    username: str | None = Field(nullable=True, max_length=30, unique=True)  # 优化长度
-    email: str = Field(nullable=False, max_length=100, unique=True)  # 优化长度
-    password_hash: str | None = Field(max_length=255)
-    role: RoleType = Field(nullable=False, default=RoleType.user)
-    bio: str | None = Field(
-        default="这个人很懒，什么都没有留下。", max_length=300
-    )  # 优化长度
-    ip_address: str | None = Field(default=None, max_length=45)
-    longitude: float | None = Field(default=None)
-    latitude: float | None = Field(default=None)
-    city: str | None = Field(default=None, max_length=50)  # 优化长度
-    is_active: bool = Field(default=False, nullable=False)
-    is_verified: bool = Field(default=False, nullable=False)
-    is_deleted: bool = Field(default=False, nullable=False)
-    created_at: datetime = Field(
-        nullable=False,
-        sa_type=TIMESTAMP,
-        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    uid: Annotated[
+        uuid.UUID | None,
+        Field(
+            default=None,
+            sa_column=Column(
+                pg.UUID,
+                server_default=text(
+                    "gen_random_uuid()"
+                ),  # 在DB层使用UUID生成(依赖pgcrypto扩展)，避免应用层和数据库层的重复生成
+                primary_key=True,
+                sa_column_kwargs={"type_": pg.UUID()},
+            ),
+        ),
+    ] = None
+    username: Annotated[
+        str | None, Field(default=None, nullable=True, max_length=30, unique=True)
+    ] = None  # 优化长度
+    email: Annotated[
+        str | None, Field(default=None, nullable=False, max_length=100, unique=True)
+    ] = None  # 优化长度
+    password_hash: Annotated[str | None, Field(default=None, max_length=255)] = None
+    role: Annotated[RoleType, Field(default=RoleType.user, nullable=False)] = (
+        RoleType.user
     )
-    updated_at: datetime | None = Field(
-        default=None,
-        nullable=True,
-        sa_type=TIMESTAMP,
-        sa_column_kwargs={"onupdate": text("CURRENT_TIMESTAMP")},
-    )
+    bio: Annotated[
+        str | None, Field(default="这个人很懒，什么都没有留下。", max_length=300)
+    ] = None  # 优化长度
+    ip_address: Annotated[str | None, Field(default=None, max_length=45)] = None
+    longitude: Annotated[float | None, Field(default=None)] = None
+    latitude: Annotated[float | None, Field(default=None)] = None
+    city: Annotated[str | None, Field(default=None, max_length=50)] = None  # 优化长度
+    is_active: Annotated[bool, Field(default=False, nullable=False)] = False
+    is_verified: Annotated[bool, Field(default=False, nullable=False)] = False
+    is_deleted: Annotated[bool, Field(default=False, nullable=False)] = False
 
     # 关系字段定义
     # 1. 一对一关系：用户头像
 
     # 2. 一对多关系：用户创建的内容（可以级联删除）
-    refresh_tokens: list["RefreshToken"] = Relationship(
-        sa_relationship_kwargs={
-            "uselist": True,
-            "lazy": "select",
-        }
-    )
+    refresh_tokens: Annotated[
+        list["RefreshToken"],
+        Relationship(
+            sa_relationship_kwargs={
+                "uselist": True,
+                "lazy": "select",
+            }
+        ),
+    ] = []
 
-    codes: list["Code"] = Relationship(
-        sa_relationship_kwargs={
-            "uselist": True,
-            "lazy": "select",
-        }
-    )
+    codes: Annotated[
+        list["Code"],
+        Relationship(
+            sa_relationship_kwargs={
+                "uselist": True,
+                "lazy": "select",
+            }
+        ),
+    ] = []
 
-    social_accounts: list["Social_Account"] = Relationship(
-        sa_relationship_kwargs={
-            "uselist": True,
-            "lazy": "select",
-        }
-    )
+    social_accounts: Annotated[
+        list["Social_Account"],
+        Relationship(
+            sa_relationship_kwargs={
+                "uselist": True,
+                "lazy": "select",
+            }
+        ),
+    ] = []
 
     # 3. 一对多关系：重要业务数据（不应级联删除，支持软删除）
 
     # 4. 重要业务关系：绝对不能级联删除
 
     def __repr__(self):
-        return f"<User(id={self.id}, username={self.username}, email={self.email}, role={self.role.name}, is_active={self.is_active})>"
+        return f"<User(id={self.uid}, username={self.username})>"

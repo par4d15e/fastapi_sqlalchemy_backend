@@ -34,7 +34,6 @@ class RefreshTokenCRUD:
             token=token,
             expired_at=expired_at,
             is_active=is_active,
-            created_at=datetime.now(timezone.utc),
         )
 
         self.session.add(db_token)
@@ -132,7 +131,6 @@ class CodeCRUD:
             type=code_type,
             expires_at=datetime.now(timezone.utc)
             + timedelta(minutes=expiration_minutes),
-            created_at=datetime.now(timezone.utc),
         )
 
         self.session.add(db_code)

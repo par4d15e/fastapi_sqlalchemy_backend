@@ -32,10 +32,9 @@ class UserCreate(UserBase):
 
 class UserUpdate(UserBase):
     """用户更新"""
-
-    username: Annotated[str | None, Field(None, min_length=3, max_length=50)]
+    username: Annotated[str | None, Field(None, min_length=3, max_length=50)] = None
     email: EmailStr | None = None
-    password: Annotated[str | None, Field(None, min_length=6, max_length=100)]
+    password: Annotated[str | None, Field(None, min_length=6, max_length=100)] = None
     is_active: bool | None = None
 
 
@@ -60,11 +59,11 @@ class UserLogin(SQLModel):
     username: Annotated[
         str | None,
         Field(None, description="Generate user schemas (app/schemas/user.py)"),
-    ]
+    ] = None
     email: Annotated[
         EmailStr | None,
         Field(None, description="Generate user schemas (app/schemas/user.py)"),
-    ]
+    ] = None
     password: Annotated[str, Field(..., min_length=6)]
 
     @model_validator(mode="after")

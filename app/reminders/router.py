@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
@@ -27,6 +27,16 @@ async def create_reminder(
 ):
     new_reminder = await service.create_reminder(reminder_data)
     return new_reminder
+
+
+@router.get("/search", response_model=list[ReminderResponse])
+async def search_reminders_by_title(
+    keyword: Annotated[str, Query(..., description="标题关键词（支持模糊匹配）")],
+    service: Annotated[ReminderService, Depends(get_reminder_service)],
+    limit: Annotated[int, Query(10, ge=1, le=500, description="每页数量")] = 10,
+    offset: Annotated[int, Query(0, ge=0, description="偏移量")] = 0,
+):
+    return await service.search_reminders_by_title(keyword, limit=limit, offset=offset)
 
 
 @router.get("/{reminder_title}", response_model=ReminderResponse)

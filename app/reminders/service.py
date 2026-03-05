@@ -44,6 +44,21 @@ class ReminderService:
 
         return [ReminderResponse.model_validate(reminder) for reminder in reminders]
     
+    async def search_reminders_by_title(
+        self,
+        keyword: str,
+        *,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> list[ReminderResponse]:
+        """通过标题关键词模糊搜索提醒（pg_trgm GIN 索引加速）"""
+        reminders = await self.repository.search_by_title_trgm(
+            keyword,
+            limit=limit,
+            offset=offset,
+        )
+        return [ReminderResponse.model_validate(r) for r in reminders]
+
     async def create_reminder(self, reminder_data: ReminderCreate) -> ReminderResponse:
         data = reminder_data.model_dump()
         try:

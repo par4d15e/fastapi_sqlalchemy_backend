@@ -66,6 +66,24 @@ class ReminderRepository:
         reminders = list(result.all())
         return reminders
 
+    async def search_by_title_trgm(
+        self,
+        keyword: str,
+        *,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> list[Reminder]:
+        """使用 pg_trgm GIN 索引进行标题模糊搜索（ILIKE）"""
+        pattern = f"%{keyword}%"
+        statement = (
+            select(Reminder)
+            .where(col(Reminder.title).ilike(pattern))
+            .offset(max(offset, 0))
+            .limit(min(limit, 500))
+        )
+        result = await self.session.exec(statement)
+        return list(result.all())
+
     async def create(self, data: Mapping[str, Any]) -> Reminder:
         reminder = Reminder(**data)
         self.session.add(reminder)

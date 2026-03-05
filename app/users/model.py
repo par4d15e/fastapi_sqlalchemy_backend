@@ -2,16 +2,7 @@ import uuid
 from enum import IntEnum
 from typing import TYPE_CHECKING, Annotated
 
-import sqlalchemy.dialects.postgresql as pg
-from sqlmodel import (
-    Column,
-    Field,
-    Index,
-    Relationship,
-    SQLModel,
-    desc,
-    text,
-)
+from sqlmodel import Column, Field, Index, Relationship, SQLModel, Uuid, text
 
 from app.core.base_model import DateTimeMixin
 
@@ -34,26 +25,19 @@ class User(SQLModel, table=True, mixins=[DateTimeMixin]):
 
     __table_args__ = (
         # 核心查询索引
-        Index("idx_users_id", "id"),
-        Index("idx_users_email", "email"),
         Index("idx_users_username", "username"),
+        Index("idx_users_email", "email"),
         # 复合业务索引
         Index(
             "idx_users_get_user_by_email",
             "email",
             "is_active",
-            "is_verified",
             "is_deleted",
-        ),  # auth_crud.py: get_user_by_email
-        Index(
-            "idx_users_get_user_by_uid", "uid", "is_active", "is_verified", "is_deleted"
-        ),  # auth_crud.py: get_user_by_id
+            "is_verified",
+        ),  # users/repository.py: get_by_email
         Index(
             "idx_users_get_user_by_username", "username", "is_active", "is_verified"
-        ),  # auth_crud.py: get_user_by_username
-        # 时间排序索引
-        Index("idx_users_created_at_desc", desc("created_at")),
-        Index("idx_users_updated_at_desc", desc("updated_at")),
+        ),  # users/repository.py: get_by_username
     )
 
     uid: Annotated[
@@ -61,12 +45,9 @@ class User(SQLModel, table=True, mixins=[DateTimeMixin]):
         Field(
             default=None,
             sa_column=Column(
-                pg.UUID,
-                server_default=text(
-                    "gen_random_uuid()"
-                ),  # 在DB层使用UUID生成(依赖pgcrypto扩展)，避免应用层和数据库层的重复生成
+                Uuid,
+                server_default=text("gen_random_uuid()"),  # PG 13+ 内置，无需扩展
                 primary_key=True,
-                sa_column_kwargs={"type_": pg.UUID()},
             ),
         ),
     ] = None
@@ -97,32 +78,17 @@ class User(SQLModel, table=True, mixins=[DateTimeMixin]):
     # 2. 一对多关系：用户创建的内容（可以级联删除）
     refresh_tokens: Annotated[
         list["RefreshToken"],
-        Relationship(
-            sa_relationship_kwargs={
-                "uselist": True,
-                "lazy": "select",
-            }
-        ),
+        Relationship(passive_deletes=True),
     ] = []
 
     codes: Annotated[
         list["Code"],
-        Relationship(
-            sa_relationship_kwargs={
-                "uselist": True,
-                "lazy": "select",
-            }
-        ),
+        Relationship(passive_deletes=True),
     ] = []
 
     social_accounts: Annotated[
         list["Social_Account"],
-        Relationship(
-            sa_relationship_kwargs={
-                "uselist": True,
-                "lazy": "select",
-            }
-        ),
+        Relationship(passive_deletes=True),
     ] = []
 
     # 3. 一对多关系：重要业务数据（不应级联删除，支持软删除）

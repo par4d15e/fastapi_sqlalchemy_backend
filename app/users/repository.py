@@ -52,14 +52,14 @@ class UserRepository:
     ) -> list[User]:
         query = select(User)
 
-        # 1. 搜索
+        # 1. 模糊搜索 (username/email)
         if search:
             pattern = f"%{search}%"
             query = query.where(
                 or_(col(User.username).ilike(pattern), col(User.email).ilike(pattern))
             )
 
-        # 2. 排序
+        # 2. 设置排序规则
         allowed_sort = {"uid", "username", "created_at"}
         if order_by not in allowed_sort:
             order_by = "uid"

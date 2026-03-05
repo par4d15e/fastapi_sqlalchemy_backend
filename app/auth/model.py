@@ -2,8 +2,7 @@ from datetime import datetime
 from enum import IntEnum
 from typing import Annotated
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.mysql import TIMESTAMP
+import sqlalchemy.dialects.postgresql as pg
 from sqlmodel import (
     Column,
     Field,
@@ -39,17 +38,17 @@ class RefreshToken(SQLModel, table=True, mixins=[DateTimeMixin]):
         # 复合索引 - 用于高效查询
         Index(
             "idx_refresh_tokens_get_user_tokens", "user_id", "expired_at", "is_active"
-        ),  # auth_crud.py: _get_user_tokens
+        ),  # auth/repository.py: _get_user_tokens
         Index(
             "idx_refresh_tokens_revoke_user_tokens", "user_id", "is_active"
-        ),  # auth_crud.py: _revoke_user_tokens
+        ),  # auth/repository.py: _revoke_user_tokens
         Index(
             "idx_refresh_tokens_generate_access_token",
             "user_id",
             "jti",
             "is_active",
             "expired_at",
-        ),  # auth_crud.py: generate_access_token
+        ),  # auth/repository.py: generate_access_token
         # 排序索引
         Index("idx_refresh_tokens_created_at_desc", desc("created_at")),
         Index("idx_refresh_tokens_expired_at_desc", desc("expired_at")),
@@ -58,14 +57,14 @@ class RefreshToken(SQLModel, table=True, mixins=[DateTimeMixin]):
     id: Annotated[int | None, Field(default=None, primary_key=True)] = None
     user_id: Annotated[
         int,
-        Field(
-            sa_column=Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-        ),
+        Field(foreign_key="users.id", ondelete="CASCADE", nullable=False, index=True),
     ]
     jti: Annotated[str, Field(nullable=False, max_length=64, unique=True)]
     token: Annotated[str, Field(nullable=False, max_length=1024)]
     is_active: Annotated[bool, Field(default=True, nullable=True)] = True
-    expired_at: Annotated[datetime, Field(nullable=False, sa_type=TIMESTAMP)]
+    expired_at: Annotated[
+        datetime, Field(sa_column=Column(pg.TIMESTAMP(timezone=True), nullable=False))
+    ]
 
     def __repr__(self):
         return f"<RefreshToken(id={self.id}, user_id={self.user_id}, is_active={self.is_active})>"
@@ -84,7 +83,7 @@ class Code(SQLModel, table=True, mixins=[DateTimeMixin]):
         # 复合索引
         Index(
             "idx_codes_get_valid_code", "user_id", "type", "expires_at", "is_used"
-        ),  # auth_crud.py: _get_valid_code
+        ),  # auth/repository.py: _get_valid_code
         Index(
             "idx_codes_validate_code",
             "user_id",
@@ -92,7 +91,7 @@ class Code(SQLModel, table=True, mixins=[DateTimeMixin]):
             "type",
             "expires_at",
             "is_used",
-        ),  # auth_crud.py: _validate_code
+        ),  # auth/repository.py: _validate_code
         # 排序索引
         Index("idx_codes_created_at_desc", desc("created_at")),
         Index("idx_codes_expires_at_desc", desc("expires_at")),
@@ -101,14 +100,14 @@ class Code(SQLModel, table=True, mixins=[DateTimeMixin]):
     id: Annotated[int | None, Field(default=None, primary_key=True)] = None
     user_id: Annotated[
         int,
-        Field(
-            sa_column=Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-        ),
+        Field(foreign_key="users.id", ondelete="CASCADE", nullable=False, index=True),
     ]
     type: Annotated[CodeType, Field(nullable=False)]
     code: Annotated[str, Field(nullable=False, max_length=10, unique=True)]  # 优化长度
     is_used: Annotated[bool, Field(default=False, nullable=False)] = False
-    expires_at: Annotated[datetime, Field(nullable=False, sa_type=TIMESTAMP)]
+    expires_at: Annotated[
+        datetime, Field(sa_column=Column(pg.TIMESTAMP(timezone=True), nullable=False))
+    ]
 
     def __repr__(self):
         return f"<Code(id={self.id}, user_id={self.user_id}, type={self.type.name}, is_used={self.is_used})>"
@@ -121,7 +120,6 @@ class Social_Account(SQLModel, table=True, mixins=[DateTimeMixin]):
 
     __table_args__ = (
         # 单列索引
-        Index("idx_social_accounts_user_id", "user_id"),
         Index("idx_social_accounts_provider", "provider"),
         Index("idx_social_accounts_provider_user_id", "provider_user_id"),
         # 复合索引
@@ -130,15 +128,13 @@ class Social_Account(SQLModel, table=True, mixins=[DateTimeMixin]):
             "user_id",
             "provider",
             "provider_user_id",
-        ),  # auth_crud.py: get_social_account
+        ),  # auth/repository.py: get_social_account
     )
 
     id: Annotated[int | None, Field(default=None, primary_key=True)] = None
     user_id: Annotated[
         int,
-        Field(
-            sa_column=Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-        ),
+        Field(foreign_key="users.id", ondelete="CASCADE", nullable=False, index=True),
     ]
     provider: Annotated[SocialProvider, Field(nullable=False)]
     provider_user_id: Annotated[str, Field(nullable=False, max_length=100, unique=True)]

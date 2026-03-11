@@ -61,8 +61,8 @@ app/
 - 所有 ORM 表模型继承 `SQLModel`，并通过 `mixins=[DateTimeMixin]` 附加时间戳字段。
 - 优先使用 SQLModel 内建的属性和 `Field` 参数实现约束、索引、关系等；只有在确实需要 PostgreSQL 特性或复杂表达式时才导入并使用 `sqlalchemy`（例如自定义列类型、函数调用等）。
 - 始终显式声明 `__tablename__`（复数形式，snake_case），并加 `# type: ignore[assignment]`。
-- 字段使用 `Annotated[<type>, Field(...)]` 风格，并在 `Field` 中填写 `description`。
-- 主键统一用 `id: Annotated[int | None, Field(default=None, primary_key=True)]`。
+- 字段使用 `name: type = Field(...)` 风格，并在 `Field` 中填写 `description`。
+- 主键统一用 `id: int | None = Field(default=None, primary_key=True)`。
 - 常用查询字段加 `index=True`。
 - 关联关系用 `TYPE_CHECKING` 保护导入，避免循环依赖。
 
@@ -73,8 +73,8 @@ from app.core.base_model import DateTimeMixin
 class MyModel(SQLModel, table=True, mixins=[DateTimeMixin]):
     __tablename__ = "my_models"  # type: ignore[assignment]
 
-    id: Annotated[int | None, Field(default=None, primary_key=True, description="ID")]
-    name: Annotated[str, Field(..., max_length=100, unique=True, description="名称")]
+    id: int | None = Field(default=None, primary_key=True, description="ID")
+    name: str = Field(..., max_length=100, unique=True, description="名称")
 ```
 
 ---
@@ -89,7 +89,7 @@ class MyModel(SQLModel, table=True, mixins=[DateTimeMixin]):
 | `<Model>Update`   | 更新请求体，所有字段设为 `Optional`（`Field(None, ...)`） |
 | `<Model>Response` | 接口响应，包含 `id` 及所有暴露字段                        |
 
-- 字段同样使用 `Annotated[<type>, Field(...)]` 风格。
+- 字段同样使用 `name: type = Field(...)` 风格。
 - `Update` Schema 所有字段必须可选（`field | None = None`），服务层调用 `model_dump(exclude_unset=True, exclude_none=True)`。
 
 ---
@@ -205,7 +205,7 @@ async def get_my_service(
 ## 代码风格
 
 - Python 版本：`>= 3.14`，充分使用新语法（`X | Y` 联合类型、`match` 语句等）。
-- 所有函数和方法参数使用 `Annotated[type, ...]` 类型注解。
+- 所有函数和方法参数须声明类型注解。
 - 异步函数统一使用 `async def`，数据库操作必须用 `await`。
 - 日志使用 `loguru`（`from loguru import logger`），禁止使用 `print()`。
 - 导入顺序：标准库 → 第三方库 → 本地模块，各组之间空一行。

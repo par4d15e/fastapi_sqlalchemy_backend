@@ -1,5 +1,5 @@
 [project]
-name = "fastapi_sqlalchemy_backend"
+name = "fastapi_backend"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -7,9 +7,9 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.18.4",
     "asyncpg>=0.31.0",
-    "fastapi[standard]>=0.128.0",
+    "fastapi[standard]>=0.135.1",
     "loguru>=0.7.3",
-    "pwdlib>=0.3.0",
+    "pwdlib[argon2]>=0.3.0",
     "python-jose>=3.5.0",
     "sqlalchemy[asyncio]>=2.0.45",
     "sqlmodel>=0.0.37",

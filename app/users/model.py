@@ -2,7 +2,8 @@ import uuid
 from enum import IntEnum
 from typing import TYPE_CHECKING, Annotated
 
-from sqlmodel import Column, Field, Index, Relationship, SQLModel, Uuid, text
+import sqlalchemy.dialects.postgresql as pg
+from sqlmodel import Column, Field, Index, Relationship, SQLModel, desc, text
 
 from app.core.base_model import DateTimeMixin
 
@@ -24,17 +25,26 @@ class User(SQLModel, table=True, mixins=[DateTimeMixin]):
     __tablename__ = "users"  # type: ignore[assignment]
 
     __table_args__ = (
-        # 复合业务索引
+        # 复合索引
+        Index("idx_users_is_active_email", "is_active", "email"),  # 按是否激活+邮箱筛选
         Index(
-            "idx_users_get_user_by_email",
-            "email",
-            "is_active",
-            "is_deleted",
-            "is_verified",
-        ),  # users/repository.py: get_by_email
+            "idx_users_is_active_username", "is_active", "username"
+        ),  # 按是否激活+用户名筛选
         Index(
-            "idx_users_get_user_by_username", "username", "is_active", "is_verified"
-        ),  # users/repository.py: get_by_username
+            "idx_users_is_verified_email", "is_verified", "email"
+        ),  # 按是否验证+邮箱筛选
+        Index(
+            "idx_users_is_verified_username", "is_verified", "username"
+        ),  # 按是否验证+用户名筛选
+        Index(
+            "idx_users_is_deleted_email", "is_deleted", "email"
+        ),  # 按是否删除+邮箱筛选
+        Index(
+            "idx_users_is_deleted_username", "is_deleted", "username"
+        ),  # 按是否删除+用户名筛选
+        # 排序索引
+        Index("idx_users_created_at_desc", desc("created_at")),
+        Index("idx_users_updated_at_desc", desc("updated_at")),
     )
 
     uid: Annotated[
@@ -42,8 +52,8 @@ class User(SQLModel, table=True, mixins=[DateTimeMixin]):
         Field(
             default=None,
             sa_column=Column(
-                Uuid,
-                server_default=text("gen_random_uuid()"),  # PG 13+ 内置，无需扩展
+                pg.UUID(as_uuid=True),
+                server_default=text("gen_random_uuid()"),
                 primary_key=True,
             ),
         ),

@@ -7,6 +7,7 @@ from app.reminders.schema import ReminderCreate, ReminderResponse, ReminderUpdat
 
 class ReminderService:
     """Reminder 服务层：封装业务逻辑并调用 repository"""
+
     def __init__(self, repository: ReminderRepository) -> None:
         self.repository = repository
 
@@ -16,14 +17,14 @@ class ReminderService:
             raise NotFoundException("Reminder not found")
 
         return ReminderResponse.model_validate(reminder)
-    
+
     async def get_reminder_by_id(self, reminder_id: int) -> ReminderResponse:
         reminder = await self.repository.get_by_id(reminder_id)
         if not reminder:
             raise NotFoundException("Reminder not found")
 
         return ReminderResponse.model_validate(reminder)
-    
+
     async def list_reminders(
         self,
         *,
@@ -43,7 +44,7 @@ class ReminderService:
         )
 
         return [ReminderResponse.model_validate(reminder) for reminder in reminders]
-    
+
     async def search_reminders_by_title(
         self,
         keyword: str,
@@ -66,7 +67,9 @@ class ReminderService:
 
             return ReminderResponse.model_validate(reminder)
         except IntegrityError as e:
-            raise AlreadyExistsException("Reminder with this title already exists") from e
+            raise AlreadyExistsException(
+                "Reminder with this title already exists"
+            ) from e
 
     async def update_reminder(
         self,
@@ -74,15 +77,19 @@ class ReminderService:
         reminder_data: ReminderUpdate,
     ) -> ReminderResponse:
         try:
-            update_data = reminder_data.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = reminder_data.model_dump(
+                exclude_unset=True, exclude_none=True
+            )
             updated = await self.repository.update(reminder_id, update_data)
             if not updated:
                 raise NotFoundException("Reminder not found")
 
             return ReminderResponse.model_validate(updated)
         except IntegrityError as e:
-            raise AlreadyExistsException("Reminder with this title already exists") from e
-        
+            raise AlreadyExistsException(
+                "Reminder with this title already exists"
+            ) from e
+
     async def delete_reminder(self, reminder_id: int) -> bool:
         deleted = await self.repository.delete(reminder_id)
         if not deleted:
